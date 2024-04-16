@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>URL to JSON Converter</title>
+    <link href="./static/css/app.css" rel="stylesheet">
+</head>
+<body>
+    <div id="inp-box">
+        <input type="text" id="urlInput" placeholder="Enter URL here" value=""/>
+        <button onclick="convertToJson()">Convert to JSON</button>
+    </div>
+
+    <div>
+        <pre class="l-box sub_title_in" id="urlDisplay"></pre>
+    </div>
+    
+    <div class="code-in">
+        <pre class="l-box pd10 desc_in" id="jsonDisplay"></pre>    
+        <div class="aux-t dpn" id="tool_box"> 
+            <i class="icon icon-copy" id="copy_json"></i>
+            <i class="icon icon-conv" id="conv_json" data-t="0"></i>
+        </div>
+    </div>
+    
+    <div class="footer-top">
+        <input type="text" id="searchInput" placeholder="Search here" oninput="highlightSearch()"/>
+    </div>
+
+    <script>
+        const urlPattern = /^(?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/i;
+
+    </script>
+
+    <script>
+        function syntaxHighlight(json) {
+            json = JSON.stringify(json, undefined, 4);
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
+                var cls = 'value';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'key';
+                    }
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function syntaxHighlightT(json) {
+            arr =  Object.entries(json);
+
+            spanstr = `{
+`
+            arr.forEach((element, index) => {
+                arr[index] = [
+                    '<span class="key">'+element[0]+'</span>',
+                    '<span class="value">'+element[1]+'</span>',
+                ]
+                spanstr += `    <span class="key">"`+element[0]+`"":</span> <span class="value">"`+element[1]+`"</span>,<br/>`
+            });
+
+            spanstr += `}`
+            return spanstr
+        }
+
+        function convertToJson() {
+            var url = document.getElementById('urlInput').value;
+            if (!urlPattern.test(url)) {
+                return
+            }
+
+            var urlObj = new URL(url);
+            var urlParams = new URLSearchParams(urlObj.search);
+            var json = Object.fromEntries(urlParams);
+            
+            urlObj.search = '';
+            document.getElementById('urlDisplay').textContent =  urlObj.href;
+            document.getElementById('jsonDisplay').innerHTML = syntaxHighlight(json);
+            // document.getElementById('jsonDisplay').innerHTML = syntaxHighlightT(json);
+
+            document.getElementById('tool_box').style.display = "block"
+        }
+
+        function highlightSearch() {
+            var input = document.getElementById('searchInput').value;
+            if(input == ""){
+                convertToJson()
+                return
+            }
+            
+            var jsonDisplay = document.getElementById('jsonDisplay');
+            jsonDisplay.innerHTML = jsonDisplay.innerText.replace(new RegExp(input, 'g'), function(matched) {
+                return "<span style='background-color: #b5f2b0;'>" + matched + "</span>";
+            });
+            jsonDisplay.innerHTML = jsonDisplay.innerHTML.replace(new RegExp('(.*)(' + input + ')(.*)', 'g'), function(matched) {
+                return "<span style='background-color: #eee8e8;'>" + matched + "</span>";
+            });
+        }
+
+        var convJsonEle = document.getElementById('conv_json')
+        convJsonEle.addEventListener('click', function() {
+            // alert('按钮被点击了!');
+            var t = convJsonEle.dataset.t
+            if(t == 0){
+                var input = document.getElementById('searchInput').value;
+                var jsonDisplay = document.getElementById('jsonDisplay');
+                let json_str = jsonDisplay.innerText
+                json_str = json_str.replace(/[\r\n\s]+/g, "");
+                jsonDisplay.innerHTML = json_str
+                convJsonEle.dataset.t = 1
+            }else{
+                convertToJson()
+                convJsonEle.dataset.t = 0
+            }
+            
+        });
+
+        var copyJsonEle = document.getElementById('copy_json')
+        copyJsonEle.addEventListener('click', function() {
+            var jsonDisplay = document.getElementById('jsonDisplay');
+            var json_str = jsonDisplay.innerText
+            navigator.clipboard.writeText(json_str).then(function() {
+                utools.showNotification('已复制内容：\n' +json_str)
+            }).catch(function(err) {
+                
+            });
+            
+        });
+
+    </script>
+    <script>
+        if(typeof utools == 'undefined'){
+            document.getElementById('inp-box').style.display = "block"
+
+            window.onerror = function() {
+                return true;
+            };
+            throw new Error('Stop all scripts');
+        }
+
+        utools.onPluginEnter(({code, type, payload, option}) => {
+            console.log('用户进入插件应用', code, type, payload)
+
+            document.getElementById('urlDisplay').innerText = ""
+            document.getElementById('jsonDisplay').innerHTML = ""
+            var text = payload
+        
+            utools.setSubInput(({ text }) => {
+                if(text != ""){
+                    document.getElementById('urlInput').value = text
+                    convertToJson()
+                }else{
+                    document.getElementById('urlDisplay').innerText = ""
+                    document.getElementById('jsonDisplay').innerHTML = ""
+                }
+            }, '输入url')
+
+        
+            if( urlPattern.test(text)) {
+                utools.setSubInputValue(text)
+            }
+            
+        })
+    </script>
+</body>
+</html>

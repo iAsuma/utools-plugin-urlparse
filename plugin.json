@@ -1,0 +1,16 @@
+{
+	"main": "index.html",
+	"logo": "logo.png",
+	"features": [
+		{
+		  "code": "convert_json",
+		  "explain": "解析url的query参数转为json，方便查看和参数分析",
+		  "cmds":["UrlParse", "urltojson", "url转json","json", {
+			"type": "regex",
+			"label": "url query转为json",
+			"match": "/^(?:(http|https|ftp):\/\/)?((?:[\\w-]+\\.)+[a-z0-9]+)((?:\/[^\/?#]*)+)?(\\?[^#]+)?(#.+)?$/i"
+		}],
+		  "mainPush": true
+		}
+	]
+}
